@@ -3,6 +3,8 @@ import ipaddress
 import dns.resolver
 import urllib.request
 import ssl
+from detection import run_detections
+from risk import assess_risk
 
 ports = [
     21,    # FTP
@@ -347,7 +349,37 @@ def main():
         }
 
         print("\nScan results:")
-        print(scan_results)
+
+        findings = run_detections(scan_results)
+
+        print("\nSecurity Findings:")
+
+        if findings:
+
+            for finding in findings:
+                print(f"\n[{finding['severity']}] {finding['title']}")
+                print(f"  Rule: {finding['rule_id']}")
+                print(f"  Description: {finding['description']}")
+                print(f"  Evidence: {finding['evidence']}")
+                print(f"  Protocol: {finding['protocol']}")
+                print(f"  Recommendation: {finding['recommendation']}")
+
+            risk = assess_risk(findings)
+            print(f"\nRisk Assessment:")
+            print("-" * 20)
+            print(f"  Risk Score: {risk['score']}/100")
+            print(f"  Risk Level: {risk['level']}")
+
+            print(f"\n  Findings Breakdown:")
+            print(f"    Low: {risk['breakdown']['low']}")
+            print(f"    Medium: {risk['breakdown']['medium']}")
+            print(f"    High: {risk['breakdown']['high']}")
+            print(f"    Critical: {risk['breakdown']['critical']}")
+
+            print(f"\nTotal: {risk['score']}")
+
+        else:
+            print("  No security findings detected.")
 
     else:
         ptr_records = resolve_ptr(name)
