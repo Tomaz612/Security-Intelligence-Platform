@@ -247,24 +247,17 @@ def print_mx_records(results):
         print("  Not found")
 
 
-def main():
-    name = input("Enter IP or domain: ")
-    target_type = distinction(name)    
+def scan_target(name):
+    target_type = distinction(name)
 
     if target_type == "Domain name":
+
         ipv4 = resolve_addresses(name, socket.AF_INET)
         ipv6 = resolve_addresses(name, socket.AF_INET6)
         ns = resolve_record(name, "NS")
         mx = resolve_record(name, "MX")
         txt = resolve_record(name, "TXT")
         cname = resolve_record(name, "CNAME")
-
-        print_results("IPv4 addresses:", ipv4)
-        print_results("IPv6 addresses:", ipv6)
-        print_results("Nameservers:", ns)
-        print_mx_records(mx)
-        print_results("Text records:", txt)
-        print_results("CNAME:", cname)
 
         dns_results = {
             "ipv4": ipv4,
@@ -275,70 +268,9 @@ def main():
             "cname": cname
         }
 
-
-
-        ## Analyze HTTP/HTTPS
         http = analyze_http(name)
-        print(f"\nHTTP/HTTPS analysis:")
-
-        for protocol, result in http.items():
-
-            print(f"\n{protocol.upper()}:")
-
-            if "error" in result:
-                print(f"  Error: {result['error']}")
-            else:
-                print(f"  Status Code: {result['status_code']}")
-                print(f"  URL: {result['url']}")
-
-                location = result["headers"].get("Location")
-                print(f"  Location: {location}")
-
-
-                security_headers = analyze_security_headers(result["headers"])
-
-                print(f"  Security Headers:")
-
-                for header, info in security_headers.items():
-                    if info["present"]:
-                        print(f"    {header}: {info['value']}")
-                    else:
-                        print(f"    {header}: Not found")
-
-        ## Analyze TLS
         tls = analyze_tls(name)
-        print(f"\nTLS analysis:")
-
-        if "error" in tls:
-            print(f"  Error: {tls['error']}")
-        else:
-            print(f"  TLS Version: {tls['tls_version']}")
-            print(f"  Cipher: {tls['cipher'][0]}")
-            print(f"  Key Size: {tls['cipher'][2]} bits")
-
-            certificate = tls["certificate"]
-
-            print("\n  Certificate:")
-            print(f"    Subject: {certificate['subject']}")
-            print(f"    Issuer: {certificate['issuer']}")
-            print(f"    Valid From: {certificate['valid_from']}")
-            print(f"    Valid Until: {certificate['valid_until']}")
-
-            print("    SANs:")
-
-            for san in certificate["san"]:
-                print(f"      {san}")
-
-
-        ## TCP Port Scanning
-
         port_results = scan_ports(name, ports)
-
-        print("\nTCP Port Analysis:")
-
-        for port, status in port_results.items():
-            print(f"  Port {port}: {status}")
-
 
         scan_results = {
             "target": name,
@@ -348,54 +280,20 @@ def main():
             "ports": port_results
         }
 
-        print("\nScan results:")
+        return scan_results
 
-        findings = run_detections(scan_results)
+def main():
+    name = input("Enter IP or domain: ")
 
-        print("\nSecurity Findings:")
+    scan_results = scan_target(name)
 
-        if findings:
+    print("\nScan results:")
+    print(scan_results)
 
-            for finding in findings:
-                print(f"\n[{finding['severity']}] {finding['title']}")
-                print(f"  Rule: {finding['rule_id']}")
-                print(f"  Description: {finding['description']}")
-                print(f"  Evidence: {finding['evidence']}")
-                print(f"  Protocol: {finding['protocol']}")
-                print(f"  Recommendation: {finding['recommendation']}")
+    findings = run_detections(scan_results)
 
-            risk = assess_risk(findings)
-            print(f"\nRisk Assessment:")
-            print("-" * 20)
-            print(f"  Risk Score: {risk['score']}/100")
-            print(f"  Risk Level: {risk['level']}")
+    risk = assess_risk(findings)
 
-            print(f"\n  Findings Breakdown:")
-            print(f"    Low: {risk['breakdown']['low']}")
-            print(f"    Medium: {risk['breakdown']['medium']}")
-            print(f"    High: {risk['breakdown']['high']}")
-            print(f"    Critical: {risk['breakdown']['critical']}")
-
-            print(f"\nTotal: {risk['score']}")
-
-        else:
-            print("  No security findings detected.")
-
-    else:
-        ptr_records = resolve_ptr(name)
-
-        print(f"IP address: {name}")
-        print_results("Reverse DNS:", ptr_records)
-
-        if ptr_records:
-            for record in ptr_records:
-                print(f"  {record}")
-            else:
-                print("  No results found.")
-
-            dns_results = {
-                "ptr": ptr_records
-            }
-
-if __name__ == "__main__":
-    main()
+    print("\nRisk Assessment:")
+    print(f"Risk Score: {risk['score']}/100")
+    print(f"Risk Level: {risk['level']}")
