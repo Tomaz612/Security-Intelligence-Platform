@@ -1,4 +1,10 @@
-from scanner import scan_target
+from threat_intelligence import check_virustotal_ip, check_abuseipdb
 
-result = scan_target("example.com")
-print(result)
+
+ip = "8.8.8.8"
+
+print("\nVirusTotal:")
+print(check_virustotal_ip(ip))
+
+print("\nAbuseIPDB:")
+print(check_abuseipdb(ip))

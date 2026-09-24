@@ -280,7 +280,33 @@ def scan_target(name):
             "ports": port_results
         }
 
-        return scan_results
+    elif target_type == "IP address":
+
+            dns_results = {
+                "ipv4": [name],
+                "ipv6": [],
+                "nameservers": [],
+                "mx": [],
+                "txt": [],
+                "cname": []
+            }
+
+            http = analyze_http(name)
+            tls = analyze_tls(name)
+            port_results = scan_ports(name, ports)
+
+    else:
+        return None
+
+    scan_results = {
+        "target": name,
+        "dns": dns_results,
+        "http": http,
+        "tls": tls,
+        "ports": port_results
+    }
+
+    return scan_results
 
 def main():
     name = input("Enter IP or domain: ")

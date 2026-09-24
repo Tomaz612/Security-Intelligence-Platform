@@ -143,6 +143,7 @@ def run_detections(scan_results):
 
     findings = []
 
+
     findings.extend(
         detect_tls_version(scan_results.get("tls", {}))
     )

@@ -3,6 +3,7 @@ from detection import run_detections
 from risk import assess_risk
 from database import get_previous_scan, save_scan
 from comparison import compare_scans
+from threat_intelligence import enrich_target
 
 
 def print_historical_analysis(comparison):
@@ -94,6 +95,11 @@ def main():
     # Risk Assessment
     risk = assess_risk(findings)
 
+    # Enrich with Threat Intelligence
+    threat_intelligence = enrich_target(scan_results)
+
+    scan_results["threat_intelligence"] = threat_intelligence
+
     # Current scan object
     current_scan = {
         "target": target,
@@ -137,6 +143,36 @@ def main():
             print(f"  Recommendation: {finding['recommendation']}")
     else:
         print("  No security findings detected.")
+
+
+    print("\nThreat Intelligence:")
+    print("-" * 20)
+
+    for ip, result in threat_intelligence["virustotal"].items():
+        print(f"\nIP: {ip}")
+
+        print("  VirusTotal:")
+        if result.get("available") is False:
+            print(f"    Unavailable: {result.get('error')}")
+        else:
+            print(f"    Reputation: {result.get('reputation')}")
+            print(f"    Malicious: {result.get('malicious')}")
+            print(f"    Suspicious: {result.get('suspicious')}")
+            print(f"    Harmless: {result.get('harmless')}")
+            print(f"    Undetected: {result.get('undetected')}")
+
+        abuse = threat_intelligence["abuseipdb"].get(ip, {})
+
+        print("  AbuseIPDB:")
+        if abuse.get("available") is False:
+            print(f"    Unavailable: {abuse.get('error')}")
+        else:
+            print(f"    Abuse Confidence Score: {abuse.get('abuse_confidence_score')}")
+            print(f"    Total Reports: {abuse.get('total_reports')}")
+            print(f"    Country: {abuse.get('country_code')}")
+            print(f"    ISP: {abuse.get('isp')}")
+            print(f"    Domain: {abuse.get('domain')}")
+            print(f"    Last Reported: {abuse.get('last_reported_at')}")
 
 
 
