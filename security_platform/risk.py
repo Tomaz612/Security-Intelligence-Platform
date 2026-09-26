@@ -1,69 +1,60 @@
-SEVERITY_POINTS = {
-    "CRITICAL": 40,
-    "HIGH": 25,
-    "MEDIUM": 15,
-    "LOW": 2,
-    "INFO": 0
-}
 
 
+def calculate_risk_score(threat_intelligence):
 
-def calculate_risk_score(findings):
+    abuseipdb = threat_intelligence.get("abuseipdb", {})
 
-    low = 0
-    medium = 0
-    high = 0
-    critical = 0
+    scores = []
 
-    score = 0
+    for ip, data in abuseipdb.items():
 
-    for finding in findings:
+        if not data.get("available", True):
+            continue
 
-        severity = finding.get("severity", "INFO")
+        score = data.get("abuse_confidence_score")
 
-        if severity == "LOW":
-            low += 2
-        elif severity == "MEDIUM":
-            medium += 15
-        elif severity == "HIGH":
-            high += 25
-        elif severity == "CRITICAL":
-            critical += 40
+        if score is not None:
+            scores.append({
+                "ip": ip,
+                "score": score
+            })
 
-        score += SEVERITY_POINTS.get(severity, 0)
+    if not scores:
+        return None, None
 
-    return min(score, 100), (low, medium, high, critical)
+    highest = max(scores, key=lambda item: item["score"])
+
+    return highest["score"], highest["ip"]
 
 
 def calculate_risk_level(score):
 
-    if score >= 70:
+    if score is None:
+        return "UNKNOWN"
+
+    if score >= 75:
         return "CRITICAL"
 
-    elif score >= 40:
+    elif score >= 50:
         return "HIGH"
 
-    elif score >= 20:
+    elif score >= 25:
         return "MODERATE"
 
     else:
         return "LOW"
 
-    
 
-def assess_risk(findings):
 
-    score, breakdown = calculate_risk_score(findings)
+def assess_risk(threat_intelligence):
+
+    score, source_ip = calculate_risk_score(threat_intelligence)
+
     level = calculate_risk_level(score)
-
 
     return {
         "score": score,
         "level": level,
-        "breakdown": {
-            "low": breakdown[0],
-            "medium": breakdown[1],
-            "high": breakdown[2],
-            "critical": breakdown[3]
-        }
+        "source": "AbuseIPDB" if score is not None else None,
+        "source_ip": source_ip
     }

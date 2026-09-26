@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Security Intelligence Platform</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="header-content">
+
+            <div class="header-title">
+                <h1>🛡 Security Intelligence Platform</h1>
+                <p>Security analysis and threat intelligence</p>
+            </div>
+
+            <div class="api-status">
+                <span class="status-dot"></span>
+                API Online
+            </div>
+
+        </div>
+    </header>
+
+    <main>
+        <section class="scan-section">
+
+            <label class="scan-label">
+                Target
+            </label>
+
+            <div class="scan-form">
+
+                <input
+                    type="text"
+                    id="target"
+                    placeholder="Enter IP address or domain"
+                >
+
+                <button onclick="runScan()">
+                    Scan →
+                </button>
+
+            </div>
+
+        </section>
+
+        <section id="loading" class="hidden">
+            <p>Scanning target...</p>
+        </section>
+
+
+        <section id="results" class="hidden">
+
+            <!-- Risk -->
+             <div class="card risk-card">
+
+                <h2>Risk Assessment</h2>
+
+                <div class="risk-summary">
+
+                    <div class="risk-score-container">
+                        <div id="risk-score" class="risk-score"></div>
+                        <div class="risk-score-label">Overall Risk</div>
+                    </div>
+
+                    <div class="risk-level-container">
+                        <div id="risk-level" class="risk-label"></div>
+                        <div class="risk-level-description">
+                            Current security risk
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="risk-source">
+                    <span id="risk-source"></span>
+                    <span id="risk-source-ip"></span>
+                </div>
+
+                <div class="risk-bar-container">
+                    <div class="risk-bar">
+                        <div id="risk-bar-fill" class="risk-bar-fill"></div>
+                    </div>
+                    <div class="risk-scale">
+                        <span>0</span>
+                        <span>100</span>
+                    </div>
+                </div>
+
+                <div class="severity-breakdown">
+
+                    <div class="severity-item">
+                        <span class="severity-count" id="critical-count">0</span>
+                        <span class="severity-name">Critical</span>
+                    </div>
+
+                    <div class="severity-item">
+                        <span class="severity-count" id="high-count">0</span>
+                        <span class="severity-name">High</span>
+                    </div>
+
+                    <div class="severity-item">
+                        <span class="severity-count" id="medium-count">0</span>
+                        <span class="severity-name">Medium</span>
+                    </div>
+
+                    <div class="severity-item">
+                        <span class="severity-count" id="low-count">0</span>
+                        <span class="severity-name">Low</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Findings -->
+            <div class="card">
+                <h2>Security Findings</h2>
+
+                <div id="findings"></div>
+            </div>
+
+
+            <!-- Historical -->
+            <div class="card">
+                <h2>Historical Analysis</h2>
+
+                <div id="historical-analysis"></div>
+            </div>
+
+
+            <!-- Network -->
+            <div class="card">
+                <h2>Network Analysis</h2>
+
+                <div id="network"></div>
+            </div>
+
+
+            <!-- DNS -->
+            <div class="card">
+                <h2>DNS Analysis</h2>
+
+                <div id="dns"></div>
+            </div>
+
+
+            <!-- TLS -->
+            <div class="card">
+                <h2>TLS Analysis</h2>
+
+                <div id="tls"></div>
+            </div>
+
+
+            <!-- Threat Intelligence -->
+            <div class="card">
+                <h2>Threat Intelligence</h2>
+
+                <div id="threat-intelligence"></div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="/static/app.js"></script>
+
+</body>
+</html>

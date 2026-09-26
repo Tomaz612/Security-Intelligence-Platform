@@ -80,8 +80,66 @@ def print_historical_analysis(comparison):
                 for address in sorted(ipv6["removed"]):
                     print(f"  [REMOVED] {address}")
 
+
+
+def analyze_target(target):
+    # Get previous scan
+    previous_scan = get_previous_scan(target)
+
+    # Perform current scan
+    scan_results = scan_target(target)
+
+    # Detection Engine
+    findings = run_detections(scan_results)
+
+
+    # Threat Intelligence
+    threat_intelligence = enrich_target(scan_results)
+
+    scan_results["threat_intelligence"] = threat_intelligence
+
+    # Risk Assessment
+    risk = assess_risk(threat_intelligence)
+
+
+    # Current scan
+    current_scan = {
+        "target": target,
+        "risk_score": risk["score"],
+        "risk_level": risk["level"],
+        "scan_results": scan_results
+    }
+
+    # Historical comparison
+    comparison = None
+
+    if previous_scan:
+        comparison = compare_scans(
+            previous_scan,
+            current_scan
+        )
+
+    # Save scan
+    save_scan(
+        target,
+        risk["score"],
+        risk["level"],
+        scan_results
+    )
+
+    return {
+        "target": target,
+        "scan_results": scan_results,
+        "findings": findings,
+        "risk": risk,
+        "threat_intelligence": threat_intelligence,
+        "historical_analysis": comparison
+    }
+
 def main():
     target = input("Enter IP or domain: ")
+
+    result = analyze_target(target)
 
     # Get previous scan
     previous_scan = get_previous_scan(target)
@@ -92,13 +150,15 @@ def main():
     # Detection Engine
     findings = run_detections(scan_results)
 
-    # Risk Assessment
-    risk = assess_risk(findings)
-
     # Enrich with Threat Intelligence
     threat_intelligence = enrich_target(scan_results)
 
     scan_results["threat_intelligence"] = threat_intelligence
+
+    # Risk Assessment
+    risk = assess_risk(threat_intelligence)
+
+
 
     # Current scan object
     current_scan = {
