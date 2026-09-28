@@ -3,6 +3,7 @@ import ipaddress
 import dns.resolver
 import urllib.request
 import ssl
+import dns.resolver
 from detection import run_detections
 from risk import assess_risk
 

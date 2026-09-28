@@ -804,3 +804,56 @@ main {
     border: 1px solid #1f2937;
     border-radius: 8px;
 }
+
+
+/* Analysis Tabs */
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 4px;
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.tab {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    color: #e5e7eb;
+    background: #1f2937;
+}
+
+.tab.active {
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* =========================
+   Analysis Section
+   ========================= */
+
+.analysis-section {
+    margin-top: 25px;
+}

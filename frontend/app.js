@@ -29,16 +29,19 @@ async function runScan() {
 
         results.classList.remove("hidden");
 
-    } catch (error) {
+        } catch (error) {
 
-        console.error(error);
+            console.error("SCAN ERROR:", error);
+            console.error("STACK:", error.stack);
 
-        alert("An error occurred while scanning the target.");
-
-    } finally {
+            alert(
+                `An error occurred while scanning the target.\n\n${error.message}`
+            );
+                
+        } finally {
 
         loading.classList.add("hidden");
-    }
+        }
 
 function displayResults(data) {
 
@@ -836,3 +839,32 @@ function formatChange(change) {
 }
 
 }
+
+
+document.addEventListener("click", function (event) {
+
+    const tab = event.target.closest(".tab");
+
+    if (!tab) {
+        return;
+    }
+
+    const target = tab.dataset.tab;
+
+    document.querySelectorAll(".tab").forEach(t => {
+        t.classList.remove("active");
+    });
+
+    document.querySelectorAll(".tab-content").forEach(content => {
+        content.classList.remove("active");
+    });
+
+    tab.classList.add("active");
+
+    const selectedContent = document.getElementById(`tab-${target}`);
+
+    if (selectedContent) {
+        selectedContent.classList.add("active");
+    }
+
+});

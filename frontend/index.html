@@ -118,53 +118,125 @@
                 </div>
 
             </div>
+        
+            <!-- Overall Risk -->
+            <section class="risk-section">
 
-            <!-- Findings -->
-            <div class="card">
-                <h2>Security Findings</h2>
+                <div class="section-title">
+                    <span>Overall Risk</span>
+                </div>
 
-                <div id="findings"></div>
-            </div>
+                <div id="risk"></div>
 
-
-            <!-- Historical -->
-            <div class="card">
-                <h2>Historical Analysis</h2>
-
-                <div id="historical-analysis"></div>
-            </div>
+            </section>
 
 
-            <!-- Network -->
-            <div class="card">
-                <h2>Network Analysis</h2>
+            <!-- Analysis Tabs -->
+            <section class="analysis-section">
 
-                <div id="network"></div>
-            </div>
+                <div class="tabs">
+
+                    <button class="tab active" data-tab="findings">
+                        Security Findings
+                    </button>
+
+                    <button class="tab" data-tab="historical">
+                        Historical Analysis
+                    </button>
+
+                    <button class="tab" data-tab="network">
+                        Network Analysis
+                    </button>
+
+                    <button class="tab" data-tab="dns">
+                        DNS Analysis
+                    </button>
+
+                    <button class="tab" data-tab="tls">
+                        TLS Analysis
+                    </button>
+
+                    <button class="tab" data-tab="threat-intelligence">
+                        Threat Intelligence
+                    </button>
+
+                </div>
 
 
-            <!-- DNS -->
-            <div class="card">
-                <h2>DNS Analysis</h2>
+                <!-- Security Findings -->
+                <div class="tab-content active" id="tab-findings">
 
-                <div id="dns"></div>
-            </div>
+                    <div class="card">
+                        <h2>Security Findings</h2>
 
+                        <div id="findings"></div>
+                    </div>
 
-            <!-- TLS -->
-            <div class="card">
-                <h2>TLS Analysis</h2>
-
-                <div id="tls"></div>
-            </div>
+                </div>
 
 
-            <!-- Threat Intelligence -->
-            <div class="card">
-                <h2>Threat Intelligence</h2>
+                <!-- Historical Analysis -->
+                <div class="tab-content" id="tab-historical">
 
-                <div id="threat-intelligence"></div>
-            </div>
+                    <div class="card">
+                        <h2>Historical Analysis</h2>
+
+                        <div id="historical-analysis"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- Network -->
+                <div class="tab-content" id="tab-network">
+
+                    <div class="card">
+                        <h2>Network Analysis</h2>
+
+                        <div id="network"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- DNS -->
+                <div class="tab-content" id="tab-dns">
+
+                    <div class="card">
+                        <h2>DNS Analysis</h2>
+
+                        <div id="dns"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- TLS -->
+                <div class="tab-content" id="tab-tls">
+
+                    <div class="card">
+                        <h2>TLS Analysis</h2>
+
+                        <div id="tls"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- Threat Intelligence -->
+                <div class="tab-content" id="tab-threat-intelligence">
+
+                    <div class="card">
+                        <h2>Threat Intelligence</h2>
+
+                        <div id="threat-intelligence"></div>
+                    </div>
+
+                </div>
+
+            </section>
+
+        
 
         </section>
 

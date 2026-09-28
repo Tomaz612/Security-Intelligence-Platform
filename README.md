@@ -2,7 +2,7 @@
 
 A cybersecurity platform designed to analyze **IP addresses and domains**, perform security checks, identify security findings, assess external threat intelligence, track changes over time, and present the results through a web dashboard.
 
-The main goal of this project is to build a security analysis and detection engine rather than simply displaying information retrieved from existing platforms.
+The main goal of this project is to build a security analysis and detection engine rather than simply displaying information retrieved from existing security platforms.
 
 The platform performs its own **DNS, HTTP/HTTPS, TLS and network analysis**, applies custom detection rules, integrates external threat intelligence, calculates an AbuseIPDB-based risk score, stores historical scan results, and compares changes between scans.
 
@@ -17,10 +17,10 @@ The platform allows a security analyst to submit an:
 
 The system currently supports:
 
-1. Target identification and resolution.
+1. Target classification and resolution.
 2. DNS analysis.
 3. HTTP/HTTPS analysis.
-4. TLS certificate and configuration analysis.
+4. TLS version, cipher and certificate analysis.
 5. Controlled TCP port analysis.
 6. Custom security detection rules.
 7. Structured security findings with evidence and recommendations.
@@ -29,7 +29,7 @@ The system currently supports:
 10. Historical scan storage and comparison.
 11. Web-based visualization of analysis results.
 
-The project is being developed incrementally, with the current architecture focusing on the complete analysis pipeline:
+The current architecture focuses on the complete analysis pipeline:
 
 ```text
 Target
@@ -60,7 +60,17 @@ Findings                   │
                      Web Dashboard
 ```
 
-Future development will focus on expanding detection coverage, improving historical analysis, enriching the dashboard, adding additional security checks, and strengthening the deployment and testing workflow.
+The risk assessment is independent of the custom detection findings. The current risk score is based on the **highest AbuseIPDB Abuse Confidence Score among the resolved IPv4 addresses** for the target.
+
+Future development may focus on expanding detection coverage, improving historical analysis, enriching the dashboard, adding additional security checks, and improving the deployment and testing workflow.
+
+---
+
+## Dashboard
+
+The platform provides a web-based interface for submitting targets and visualizing the results of the security analysis.
+
+![Security Intelligence Platform Dashboard](images/dashboard.png)
 
 ---
 
@@ -104,56 +114,32 @@ The platform is designed around a clear separation between **technical analysis*
                               Web Dashboard
 ```
 
-The **Analysis Engine** collects technical information directly from the target.
+The **Analysis Engine** collects technical information from the target through DNS, HTTP/HTTPS, TLS and controlled network analysis.
 
 The **Detection Engine** interprets that information using custom security rules and generates structured findings containing severity, evidence and recommendations.
 
 The **Threat Intelligence** layer enriches the analysis using external reputation sources. VirusTotal provides additional contextual information, while the AbuseIPDB Abuse Confidence Score is used as the source for the platform's overall risk score.
 
-The **Risk Assessment** is intentionally independent from the Detection Engine findings. Detection findings provide detailed security observations, while the overall risk score is derived from the highest available AbuseIPDB score among the target's resolved IPv4 addresses.
+The **Risk Assessment** is intentionally independent from the Detection Engine findings. Detection findings provide detailed security observations, while the overall risk score is derived from the **highest available AbuseIPDB score among the target's resolved IPv4 addresses**.
 
-The results are persisted in **PostgreSQL**, allowing the platform to compare the current analysis with previous scans and identify changes over time.
+The results are persisted in **PostgreSQL**, allowing the platform to compare the current analysis with previous scans and identify changes over time, including changes to risk, exposed ports and resolved IP addresses.
 
 The **Web Dashboard** provides the interface through which analysts can submit targets and visualize the resulting security analysis.
 
 ---
 
-# 3. Target Validation
+## 3. DNS Analysis
 
-The platform accepts:
+The platform performs DNS queries to collect relevant DNS information for domain targets.
 
-```text
-IP address
-Domain
-```
+The current implementation supports:
 
-The system determines whether the submitted target is an IP address or a domain name before starting the analysis.
-
-Examples:
-
-```text
-8.8.8.8
-example.com
-subdomain.example.com
-```
-
-Invalid or malformed targets will be rejected.
-
----
-
-# 4. DNS Analysis
-
-The platform currently performs DNS queries and collects relevant DNS information.
-
-The implementation supports:
-
-* A records
-* AAAA records
+* A records (IPv4)
+* AAAA records (IPv6)
 * MX records
 * NS records
 * TXT records
 * CNAME records
-* Reverse DNS / PTR records
 
 For domain targets, the scanner performs IPv4 and IPv6 resolution and queries the supported DNS record types.
 
@@ -173,46 +159,37 @@ NS
 → ns2.example.com
 ```
 
-For IP targets, the scanner performs reverse DNS / PTR resolution.
+The collected DNS information is stored as part of the scan results and is used by the Threat Intelligence and Historical Analysis components.
 
-The collected DNS information is stored in the scan results structure and is used by the Detection Engine, Threat Intelligence layer and Historical Analysis.
+The Threat Intelligence layer uses the resolved IPv4 addresses for external reputation analysis through VirusTotal and AbuseIPDB.
 
-### Detection Coverage
+Historical Analysis can identify changes in the target's resolved IPv4 and IPv6 addresses between scans.
 
-The Detection Engine currently focuses on security-relevant findings derived from the collected scan data.
-
-Additional DNS-specific detection rules may be introduced in future versions, such as:
-
-- Unexpected DNS record changes
-- Suspicious DNS configuration
-- Domains resolving to unexpected infrastructure
-- Suspicious or unusual DNS characteristics
-
-Detection rules are implemented by the project rather than simply copied from an external service.
+DNS-specific detection rules are not currently implemented. Future versions may introduce detections for unexpected DNS changes, suspicious configurations, or other DNS-related security indicators.
 
 ---
 
-# 5. HTTP / HTTPS Analysis
+## 4. HTTP / HTTPS Analysis
 
-The platform currently performs HTTP and HTTPS analysis against the submitted target when applicable.
+The platform performs HTTP and HTTPS analysis against the submitted target when applicable.
 
 The scanner collects:
 
 * HTTP status code
-* Final/requested URL
-* Redirect information
-* HTTP Response headers
+* Requested/response URL
+* HTTP response headers
 * Security-related headers
-* HTTPS availability
+* Redirect information
 
-Redirects are intentionally not automatically followed during the initial request, allowing the scanner to identify the returned Location header.
+Redirects are intentionally **not automatically followed** during the initial request. This allows the scanner to inspect the returned HTTP status code and `Location` header directly.
 
-Examples:
+Example:
 
-```text
+```text id="9h3r2f"
 HTTP Status: 301
-HTTPS: Available
-Redirect: HTTP → HTTPS
+
+Location:
+→ https://example.com/
 
 Security Headers:
 
@@ -220,35 +197,38 @@ HSTS:        Present
 CSP:         Present
 X-Frame:     Present
 X-Content:   Missing
-
-The scanner currently checks the presence and value of:
-
-Strict-Transport-Security
-Content-Security-Policy
-X-Frame-Options
-X-Content-Type-Options
-Referrer-Policy
-
-The collected HTTP information is stored in the scan results structure.
 ```
+
+The scanner currently checks the presence and value of the following security headers:
+
+* `Strict-Transport-Security`
+* `Content-Security-Policy`
+* `X-Frame-Options`
+* `X-Content-Type-Options`
+* `Referrer-Policy`
+* `Permissions-Policy`
+
+The collected HTTP/HTTPS information is stored as part of the scan results.
 
 ### Detection Coverage
 
-The Detection Engine currently evaluates HTTP/HTTPS security characteristics such as:
+The Detection Engine currently evaluates the following HTTP security characteristics:
 
-- Missing security headers
-- HTTPS configuration
-- Other HTTP security-related conditions
+* Missing security headers
 
-Example findings:
+Each detected condition is represented as a structured finding containing severity, evidence and a remediation recommendation.
 
-[LOW] Missing security header
+Example:
+
+```text
+[LOW] Missing Strict-Transport-Security
+```
 
 ---
 
-# 6. TLS Analysis
+## 5. TLS Analysis
 
-For HTTPS-enabled targets, the platform analyzes the TLS configuration and associated certificate information.
+For HTTPS-enabled targets, the platform analyzes the TLS connection and associated certificate information.
 
 The scanner collects:
 
@@ -257,31 +237,39 @@ The scanner collects:
 * Certificate subject
 * Certificate issuer
 * Certificate validity period
-* Certificate expiration date
 * Subject Alternative Names (SANs)
 
 Example:
 
-```text
+```text id="9s4k1e"
 TLS Analysis
 
 Protocol: TLSv1.3
 
-Cipher: TLS_AES_256_GCM_SHA384
+Cipher:
+→ TLS_AES_256_GCM_SHA384
 
 Certificate:
 
-Subject: www.example.com
-Issuer: Example CA
-Valid From: 2026-01-01
-Valid Until: 2027-01-01
+Subject:
+→ www.example.com
+
+Issuer:
+→ Example CA
+
+Valid From:
+→ 2026-01-01
+
+Valid Until:
+→ 2027-01-01
 
 SANs:
+
 → www.example.com
 → example.com
 ```
 
-The collected TLS information is stored in the scan results structure and is evaluated by the Detection Engine.
+The collected TLS information is stored as part of the scan results and is evaluated by the Detection Engine.
 
 ### Detection Coverage
 
@@ -289,8 +277,9 @@ The Detection Engine currently evaluates TLS and certificate-related security co
 
 Examples of findings include:
 
-```text
+```text id="h4w7pz"
 [HIGH] Deprecated TLS version detected
+
 [LOW] Invalid certificate
 ```
 
@@ -300,7 +289,7 @@ The TLS analysis is implemented as part of the platform's own analysis engine ra
 
 ---
 
-# 7. Network / Port Analysis
+# 6. Network / Port Analysis
 
 The scanner performs controlled TCP connectivity checks against a predefined set of common ports.
 
@@ -320,23 +309,26 @@ The current implementation checks:
 3389   RDP
 ```
 
-The scanner identifies whether a TCP connection can be established:
+The scanner identifies the TCP connectivity state for each port:
 
 ```text
 OPEN
 CLOSED
+FILTERED
 ```
 
 Example:
 
 ```text
-Port Scan
+Port Analysis
 
 22     OPEN
 80     OPEN
 443    OPEN
 3389   CLOSED
 ```
+
+A port is considered **open** when a TCP connection can be established. A **closed** port indicates that the connection was refused or could not be established within the expected conditions. A **filtered** state is returned when the connection attempt fails due to other network-level errors.
 
 The current implementation uses TCP connection attempts rather than a raw SYN scan.
 
@@ -351,42 +343,49 @@ The Detection Engine evaluates selected exposed services and can generate securi
 Current examples include:
 
 ```text
-[MEDIUM] RDP exposed
+[MEDIUM] FTP exposed
+
 [HIGH] Telnet exposed
+
 [MEDIUM] SMB exposed
+
+[MEDIUM] RDP exposed
 ```
 
 Not every open port automatically generates a security finding. The Detection Engine applies specific rules to determine which exposed services should be reported.
 
 Additional service-specific detection rules may be introduced in future versions.
 
+---
 
---- 
+## 7. Current Scan Data Structure
 
-# 8. Current Scan Data Structure
+The Analysis Engine combines the results from the different analysis modules into a structured scan result:
 
-The scanner combines the results from the different analysis modules into a single structured object:
-
-```python id="7iyf9r"
+```python
 scan_results = {
     "target": name,
     "dns": dns_results,
     "http": http_results,
     "tls": tls_results,
     "ports": port_results
-
 }
 ```
 
-This structure provides the interface between the Analysis Engine and the Detection Engine, while also providing the data required by the Threat Intelligence layer.
+This structure provides the technical data used by the Detection Engine, Threat Intelligence layer, and Historical Analysis.
 
-The separation is intentional:
+During the analysis pipeline, the scan results are enriched with external threat intelligence data:
 
-```text id="d2n7v6"
+```python
+scan_results["threat_intelligence"] = threat_intelligence
+```
+
+The separation between the different layers is intentional:
+
+```text
                     Analysis Engine
-
                           │
-                          │ Collect facts
+                          │ Collect technical data
                           ▼
                      scan_results
                           │
@@ -402,9 +401,13 @@ The separation is intentional:
                                Risk Assessment
 ```
 
-The scanner is responsible for collecting technical information, while the Detection Engine is responsible for interpreting that information according to security rules.
+The Analysis Engine is responsible for collecting technical information.
 
-The Threat Intelligence layer independently enriches the scan results with external reputation data, which is used by the Risk Assessment module.
+The Detection Engine interprets that information according to predefined security rules and generates structured findings.
+
+The Threat Intelligence layer enriches the analysis using external reputation data from VirusTotal and AbuseIPDB.
+
+The Risk Assessment uses the available AbuseIPDB data to calculate the overall risk score independently of the Detection Engine findings.
 
 This separation allows the platform to distinguish between:
 
@@ -413,23 +416,20 @@ This separation allows the platform to distinguish between:
 * **External threat intelligence**
 * **Overall risk assessment**
 
---- 
+---
 
-# 9. Detection Engine
+## 8. Detection Engine
 
-Status: Implemented
+The Detection Engine consumes the structured `scan_results` generated by the Analysis Engine and applies custom security detection rules.
 
-The Detection Engine consumes the structured `scan_results` generated by the scanner and applies custom security detection rules.
+The engine currently evaluates:
 
-The engine currently evaluates areas such as:
-
-* TLS version
-* Security headers
+* Deprecated TLS versions
+* Certificate validity
+* Missing security headers
 * Exposed services
-* Certificate configuration
-* HTTP/HTTPS security configuration
 
-The Detection Engine converts raw scanner data into structured findings.
+The Detection Engine converts raw scanner data into structured security findings.
 
 Each finding contains information such as:
 
@@ -443,7 +443,7 @@ Each finding contains information such as:
 
 Example:
 
-```text id="4o7v6s"
+```text id="j8f4p2"
 Rule ID: TLS-001
 
 Finding: Deprecated TLS Version
@@ -458,17 +458,17 @@ Disable deprecated TLS versions and use modern TLS configurations.
 
 The Detection Engine is designed to separate **data collection** from **security interpretation**.
 
-The scanner collects technical information, while the Detection Engine determines whether that information represents a security finding.
+The Analysis Engine collects technical information, while the Detection Engine determines whether that information represents a security finding according to the project's detection rules.
 
 ### Findings and Risk Assessment
 
 Detection findings are intentionally kept independent from the overall Risk Score.
 
-The severity assigned to a finding does not directly contribute points to the Risk Score.
+The severity assigned to a finding does **not** directly contribute points to the Risk Score.
 
 Instead:
 
-```text id="rj7q0b"
+```text id="q6k3mr"
 Scanner
    │
    ▼
@@ -487,16 +487,23 @@ scan_results
 
 The current Risk Assessment is based on the **highest available AbuseIPDB Abuse Confidence Score** among the target's resolved IPv4 addresses.
 
-This architecture allows the platform to provide both:
+This separation allows the platform to provide two distinct perspectives:
 
-* **Detailed local security findings** generated by custom detection rules
-* **An external reputation-based risk assessment** based on threat intelligence
+* **Detailed security findings** generated by custom detection rules
+* **External reputation-based risk assessment** based on threat intelligence
+
+## The two outputs complement each other without one directly determining the other.
+
+
+### Example Findings
+
+The Detection Engine generates structured security findings based on the technical analysis performed by the platform.
+
+![Security Findings](images/security_findings.png)
 
 ---
 
-# 10. Risk Assessment
-
-Status: Implemented
+## 9. Risk Assessment
 
 The Risk Assessment module calculates the overall risk score independently from the findings generated by the Detection Engine.
 
@@ -515,7 +522,7 @@ AbuseIPDB
    ↓
 Abuse Confidence Scores
    ↓
-Highest Score
+Highest Available Score
    ↓
 Risk Assessment
 ```
@@ -524,11 +531,8 @@ The project currently maps the AbuseIPDB score to four risk levels:
 
 ```text
 75–100    CRITICAL
-
 50–74     HIGH
-
 25–49     MODERATE
-
 0–24      LOW
 ```
 
@@ -555,7 +559,9 @@ Example:
 
 ```text
 example.com
+
     ↓
+
 192.0.2.10 → Abuse Confidence: 5
 192.0.2.20 → Abuse Confidence: 72
 192.0.2.30 → Abuse Confidence: 18
@@ -564,19 +570,19 @@ example.com
 The resulting risk assessment is:
 
 ```text
-Risk Score: 72/100
+Risk Score: 72 / 100
 Risk Level: HIGH
 Based on: 192.0.2.20
 Source: AbuseIPDB
 ```
 
-The highest available score is used to avoid hiding a potentially significant reputation signal behind lower scores from other resolved addresses.
+The highest available score is used as the target's overall AbuseIPDB-based risk score.
 
 ### Unavailable Risk Data
 
-If no usable AbuseIPDB score is available, the platform does not assume that the target is safe.
+If no usable AbuseIPDB score is available, the platform does not treat the absence of threat intelligence data as a zero-risk result.
 
-Instead, the Risk Assessment is returned as:
+The Risk Assessment returns no numerical score and the dashboard displays:
 
 ```text
 Risk Score: N/A
@@ -584,15 +590,13 @@ Risk Level: UNKNOWN
 Source: Not available
 ```
 
-This distinction is important because:
+This distinction is important:
 
 ```text
 0 / 100  → AbuseIPDB provided a score of 0
 
 N/A      → No usable AbuseIPDB score is available
 ```
-
-Therefore, missing threat intelligence data is not treated as a zero-risk result.
 
 ### VirusTotal
 
@@ -609,21 +613,19 @@ Risk Assessment
 
 Risk Score: 100 / 100
 Risk Level: CRITICAL
-
 Source: AbuseIPDB
 Based on: 34.79.68.82
 ```
 
-The dashboard also displays the severity distribution of the Detection Engine findings separately. These findings are informational and are not used to calculate the AbuseIPDB-based risk score.
+The dashboard also displays the severity distribution of Detection Engine findings separately. These findings are informational and are not used to calculate the AbuseIPDB-based risk score.
 
+---
 
-# 11. Historical Analysis
-
-Status: Implemented
+## 10. Historical Analysis
 
 The Historical Analysis module allows the platform to monitor how the security posture of a target changes over time.
 
-Each completed scan is persisted in PostgreSQL, allowing the platform to retrieve the most recent scan for a target and compare it against the current analysis.
+Each completed scan is persisted in PostgreSQL, allowing the platform to retrieve the most recent previous scan for a target and compare it against the current analysis.
 
 The current historical analysis compares:
 
@@ -635,13 +637,10 @@ The current historical analysis compares:
 
 Current architecture:
 
-```text
+```text id="b1w8dr"
                     Current Scan
-
                          │
-
                          ▼
-
                  ┌───────────────┐
                  │    Scanner    │
                  └───────┬───────┘
@@ -677,14 +676,14 @@ The Risk Score used in the historical comparison is the AbuseIPDB-based score ge
 
 Example:
 
-```text
+```text id="j79f5p"
 Previous Scan
 
   Risk Score: 20
   Risk Level: LOW
 
   Port 443: OPEN
-  Port 8080: CLOSED
+  Port 3389: CLOSED
 
   IPv4:
     93.184.216.34
@@ -696,7 +695,7 @@ Current Scan
   Risk Level: MODERATE
 
   Port 443: OPEN
-  Port 8080: OPEN
+  Port 3389: OPEN
 
   IPv4:
     1.2.3.4
@@ -704,31 +703,26 @@ Current Scan
 
 The platform can identify changes such as:
 
-```text
-Risk Score: 20 -> 45
+```text id="4a7p8n"
+Risk Score: 20 → 45
 
-Risk Level: LOW -> MODERATE
+Risk Level: LOW → MODERATE
 
 Ports Opened:
-
-  [NEW] Port 8080 is now open.
+  [NEW] Port 3389 is now open.
 
 IPv4 Addresses Added:
-
   [ADDED] 1.2.3.4
 
 IPv4 Addresses Removed:
-
   [REMOVED] 93.184.216.34
 ```
 
 If no relevant changes are detected, the platform reports:
 
-```text
-Historical Analysis:
-
---------------------
-
+```text id="3c8k1v"
+Historical Analysis
+-------------------
 No changes detected.
 ```
 
@@ -746,21 +740,26 @@ Future comparison capabilities may include:
 * DNS record changes beyond IP addresses
 * Changes in threat intelligence results
 
-This transforms the platform from a point-in-time security scanner into a system capable of monitoring the security posture of a target over time.
+This allows the platform to evolve from a point-in-time security scanner into a system capable of tracking changes in a target's security posture over time.
 
-# 12. Database & Configuration
+### Example
 
-Status: Implemented
+The dashboard can display changes detected between the current scan and the previous stored scan.
 
-The database integration allows completed scans to be persisted, retrieved and compared over time for historical security posture analysis.
+![Historical Analysis](images/historical_analysis.png)
 
-The platform currently uses PostgreSQL.
+---
 
-Database:
+## 11. Database & Configuration
+
+The platform uses **PostgreSQL** to persist completed scans and support historical security posture analysis.
+
+### Database
+
+The current database configuration uses:
 
 ```text
 Database: security_intelligence
-
 Table: scans
 ```
 
@@ -772,7 +771,7 @@ The `scans` table stores:
 * Risk level
 * Complete scan results in JSONB format
 
-The current database schema is:
+The current schema is:
 
 ```text
 id
@@ -783,9 +782,17 @@ risk_level
 scan_results
 ```
 
-Python communicates with PostgreSQL through the `psycopg` driver.
+The application communicates with PostgreSQL through the `psycopg` driver.
 
-Database credentials and API keys are not hardcoded in the source code. They are provided through environment variables.
+### Stored Scan Data
+
+Completed scans are persisted in PostgreSQL, allowing the platform to retrieve previous results and perform historical comparisons.
+
+![PostgreSQL scan records](images/postgresql_scans.png)
+
+### Configuration and Secrets
+
+Database credentials and external API keys are provided through environment variables rather than being hardcoded in the source code.
 
 Example:
 
@@ -794,25 +801,26 @@ DATABASE_HOST=localhost
 DATABASE_NAME=security_intelligence
 DATABASE_USER=security_platform
 DATABASE_PASSWORD=your_password
+
 VIRUSTOTAL_API_KEY=your_api_key
 ABUSEIPDB_API_KEY=your_api_key
 ```
 
-A local `.env` file can be used during development and should be excluded from version control:
+During local development, these values can be stored in a `.env` file:
 
 ```text
 .env
 ```
 
-The project loads database configuration and external API credentials from environment variables rather than storing secrets directly inside the source code.
+The `.env` file is excluded from version control through `.gitignore`, preventing local credentials and API keys from being committed to the repository.
 
 ### Risk Score Nullability
 
 The `risk_score` field allows `NULL` values.
 
-This is intentional because a Risk Score is not generated when no usable AbuseIPDB score is available.
+This is intentional because a Risk Score is only generated when a usable AbuseIPDB score is available.
 
-In this situation, the platform stores:
+When no usable AbuseIPDB score exists, the platform stores:
 
 ```text
 risk_score: NULL
@@ -821,13 +829,16 @@ risk_level: UNKNOWN
 
 This prevents missing threat intelligence data from being incorrectly represented as a zero-risk result.
 
-The `.env` file is excluded from the Git repository through `.gitignore`, preventing local credentials and API keys from being committed.
+The distinction is therefore:
+
+```text
+0 / 100 → AbuseIPDB returned a score of 0
+N/A      → No usable AbuseIPDB score was available
+```
 
 ---
 
-# 13. Threat Intelligence
-
-**Status: Implemented**
+## 12. Threat Intelligence
 
 The Threat Intelligence layer enriches the results generated by the internal analysis engine with external reputation and intelligence data.
 
@@ -836,7 +847,7 @@ The current implementation integrates:
 * **VirusTotal**
 * **AbuseIPDB**
 
-For domain targets, the platform first resolves the target to IPv4 addresses. Each resolved IPv4 address can then be queried against the configured threat intelligence providers.
+For domain targets, the platform resolves the target to IPv4 addresses and uses the resolved addresses for threat intelligence lookups.
 
 For IP targets, the target IP is directly used for threat intelligence lookups.
 
@@ -852,24 +863,24 @@ The Threat Intelligence layer currently collects information such as:
 
 ### AbuseIPDB
 
-* Abuse confidence score
+* Abuse Confidence Score
 * Total reports
 * Country
 * ISP
 * Associated domain
 * Last reported date
 
-API keys are loaded from environment variables through the `.env` configuration and are not stored in the repository.
+API keys are provided through environment variables and are not stored directly in the source code or repository.
 
-The Threat Intelligence layer is designed as an **optional enrichment layer**. If an API is unavailable, rate-limited, not configured, or returns an error, the main security analysis continues normally.
+The Threat Intelligence layer is designed as an **optional enrichment layer**. If an external API is unavailable, rate-limited, not configured, or returns an error, the internal security analysis can continue without depending on the external service.
 
-HTTP `429 Too Many Requests` responses are explicitly handled to prevent external API rate limits from interrupting the scan.
+HTTP `429 Too Many Requests` responses are explicitly handled to prevent external API rate limits from interrupting the overall scan.
 
 ### Threat Intelligence and Risk Assessment
 
 AbuseIPDB has a specific role in the platform's Risk Assessment.
 
-The **Abuse Confidence Score** is used as the source for the overall risk score. When a target resolves to multiple IPv4 addresses, the highest available AbuseIPDB score is selected.
+The **Abuse Confidence Score** is used as the source for the overall risk score. When a target resolves to multiple IPv4 addresses, the **highest available AbuseIPDB score** is selected.
 
 ```text
 Target
@@ -904,15 +915,13 @@ The following example shows the Threat Intelligence output generated when analyz
 
 ![Threat Intelligence output](images/threat_intelligence_output2.png)
 
---- 
+---
 
-# 14. Web Dashboard
-
-**Status: Implemented**
+## 13. Web Dashboard
 
 The platform includes a web-based dashboard for submitting targets and visualizing the results generated by the analysis engine.
 
-The dashboard is served directly by the FastAPI application and provides a centralized interface for security analysis.
+The dashboard is served directly by the **FastAPI** application and provides a centralized interface for security analysis.
 
 Current functionality includes:
 
@@ -930,11 +939,11 @@ Current functionality includes:
 * Historical scan comparisons
 * Responsive layout for smaller screens
 
-The dashboard separates the main analysis areas into dedicated sections, allowing the results to be presented in a more accessible format than raw API responses.
+The dashboard separates the main analysis areas into dedicated sections, making the results easier to interpret than raw API responses.
 
-The current interface is designed around the following structure:
+The current interface is organized around the following analysis areas:
 
-```text
+```text id="n7h4kc"
 Target
    │
    ↓
@@ -942,70 +951,53 @@ Security Analysis
    │
    ├── Risk Assessment
    ├── Findings
+   ├── Historical Analysis
    ├── Network Analysis
    ├── DNS Analysis
-   ├── HTTP/HTTPS Analysis
    ├── TLS Analysis
-   ├── Threat Intelligence
-   └── Historical Analysis
+   └── Threat Intelligence
 ```
 
-The dashboard is intentionally implemented using a lightweight frontend based on **HTML, CSS and JavaScript**, served through FastAPI.
+HTTP/HTTPS analysis is presented as part of the overall scan results and contributes to the security findings displayed by the dashboard.
 
-Further UI improvements, additional visualizations and refined presentation of historical data are planned as part of the project's future development.
+The frontend is intentionally lightweight and is implemented using **HTML, CSS and JavaScript**, with the FastAPI application responsible for serving the dashboard and exposing the analysis API.
 
----
+The dashboard also provides visual distinctions between risk levels and finding severities, allowing analysts to quickly identify the overall AbuseIPDB-based risk assessment while keeping individual security findings separate from the risk score.
 
-# 15. Containers and CI/CD
-
-Status: Planned
-
-The application will eventually be containerized using Docker and Docker Compose.
-
-GitHub Actions will be used to implement CI/CD workflows such as:
-
-Git Push
-   ↓
-GitHub Actions
-   ↓
-Tests
-   ↓
-Linting / Validation
-   ↓
-Build
+Further UI improvements, additional visualizations and more detailed presentation of historical data are planned as part of the project's future development.
 
 ---
 
-# 16. Final Technology Stack
+## 14. Final Technology Stack
 
-| Area                | Technology              |
-| ------------------- | ----------------------- |
-| Backend             | Python                  |
-| API Framework       | FastAPI                 |
-| Frontend            | HTML / CSS / JavaScript |
-| Database            | PostgreSQL              |
-| Network Analysis    | Python                  |
-| DNS Analysis        | Python                  |
-| HTTP Analysis       | Python                  |
-| TLS Analysis        | Python                  |
-| Threat Intelligence | External APIs           |
-| Containers          | Docker / Docker Compose |
-| Operating System    | Linux                   |
-| Version Control     | Git / GitHub            |
-| CI/CD               | GitHub Actions          |
+| Area                | Technology                  |
+| ------------------- | --------------------------- |
+| Backend             | Python                      |
+| API Framework       | FastAPI                     |
+| Frontend            | HTML / CSS / JavaScript     |
+| Database            | PostgreSQL                  |
+| Network Analysis    | Python                      |
+| DNS Analysis        | Python                      |
+| HTTP Analysis       | Python                      |
+| TLS Analysis        | Python                      |
+| Threat Intelligence | VirusTotal / AbuseIPDB APIs |
+| Operating System    | Linux                       |
+| Version Control     | Git / GitHub                |
+
+The platform is intentionally built using lightweight technologies, with Python serving as the core language for the security analysis, detection logic, API and database integration.
 
 ---
 
-# 17. Final Project Goal
+## 15. Project Scope
 
-The final product should be a small but functional cybersecurity platform capable of:
+The current platform implements an end-to-end security analysis workflow:
 
-```text
+```text id="5p8q1m"
                     TARGET
                        │
                        ▼
               ┌────────────────┐
-              │ Automated Scan │
+              │   Scan Engine  │
               └───────┬────────┘
                       │
        ┌──────────────┼──────────────┐
@@ -1013,22 +1005,52 @@ The final product should be a small but functional cybersecurity platform capabl
       DNS          HTTP/TLS       NETWORK
        │              │              │
        └──────────────┼──────────────┘
+                      │
                       ▼
              Detection Engine
                       │
                       ▼
-                Risk Scoring
+                  Findings
                       │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-     Historical Data      Threat Intelligence
-          │                       │
-          └───────────┬───────────┘
-                      ▼
-                 Final Report
+                      │
+                      ├─────────────────────┐
+                      │                     │
+                      ▼                     ▼
+             Threat Intelligence     Historical Data
+              ├── VirusTotal
+              └── AbuseIPDB
                       │
                       ▼
-                 Web Dashboard
+               Risk Assessment
+                      │
+                      ▼
+                Web Dashboard
 ```
 
-The project will demonstrate practical experience across cybersecurity, software development, databases, web technologies, networking, Linux, containerization, version control and CI/CD, while keeping the core focus on security analysis rather than simply consuming external APIs.
+The platform demonstrates practical experience across:
+
+* Cybersecurity analysis and detection
+* Network and protocol analysis
+* DNS, HTTP/HTTPS and TLS
+* Threat intelligence integration
+* Risk assessment
+* Python development
+* REST API development
+* PostgreSQL and JSONB data storage
+* Web frontend development
+* Linux
+* Git and GitHub
+
+The core focus is on building a security analysis and detection engine rather than simply consuming external security APIs.
+
+### Future Development
+
+Potential future improvements include:
+
+* Expanded detection coverage
+* More detailed historical comparisons
+* Additional threat intelligence sources
+* Improved dashboard visualizations
+* Automated testing and CI/CD
+* Containerized deployment
+* Additional security analysis capabilities
