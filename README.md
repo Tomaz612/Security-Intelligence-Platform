@@ -70,7 +70,7 @@ Future development may focus on expanding detection coverage, improving historic
 
 The platform provides a web-based interface for submitting targets and visualizing the results of the security analysis.
 
-![Security Intelligence Platform Dashboard](images/dashboard.png)
+![Security Intelligence Platform Dashboard](images/dashboard2.png)
 
 ---
 
