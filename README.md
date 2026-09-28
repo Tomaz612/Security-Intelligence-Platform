@@ -742,12 +742,6 @@ Future comparison capabilities may include:
 
 This allows the platform to evolve from a point-in-time security scanner into a system capable of tracking changes in a target's security posture over time.
 
-### Example
-
-The dashboard can display changes detected between the current scan and the previous stored scan.
-
-![Historical Analysis](images/historical_analysis.png)
-
 ---
 
 ## 11. Database & Configuration
