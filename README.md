@@ -920,7 +920,7 @@ The Threat Intelligence results are presented in the web dashboard alongside the
 
 The following example shows the Threat Intelligence output generated when analyzing `8.8.8.8`:
 
-![Threat Intelligence output](images/threat_intelligence_output2.png)
+![Threat Intelligence output](images/threat_intelligence_output.png)
 
 ---
 
