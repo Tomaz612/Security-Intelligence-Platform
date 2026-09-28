@@ -287,6 +287,12 @@ Additional TLS and certificate validation rules may be introduced in future vers
 
 The TLS analysis is implemented as part of the platform's own analysis engine rather than relying solely on an external security scanning service.
 
+### Example
+
+The dashboard presents the TLS connection and certificate information collected during the scan.
+
+![TLS Analysis](images/tls_analysis.png)
+
 ---
 
 # 6. Network / Port Analysis
@@ -355,6 +361,13 @@ Current examples include:
 Not every open port automatically generates a security finding. The Detection Engine applies specific rules to determine which exposed services should be reported.
 
 Additional service-specific detection rules may be introduced in future versions.
+
+### Example
+
+The dashboard presents the TCP port analysis results, showing the ports identified as **open, closed or filtered** during the scan.
+
+![Network Analysis](images/network_analysis.png)
+
 
 ---
 
