@@ -31,34 +31,7 @@ The system currently supports:
 
 The current architecture focuses on the complete analysis pipeline:
 
-```text
-Target
-   │
-   ▼
-Analysis Engine
-   │
-   ├── DNS
-   ├── HTTP/HTTPS
-   ├── TLS
-   └── Network
-   │
-   ├──────────────────────┐
-   ▼                      ▼
-Detection Engine    Threat Intelligence
-   │                 ├── VirusTotal
-   ▼                 └── AbuseIPDB
-Findings                   │
-                           ▼
-                     Risk Assessment
-                           │
-             ┌─────────────┴─────────────┐
-             ▼                           ▼
-       PostgreSQL              Historical Analysis
-             │                           │
-             └─────────────┬─────────────┘
-                           ▼
-                     Web Dashboard
-```
+![Security Intelligence Platform Architecture](images/architecture.png)
 
 The risk assessment is independent of the custom detection findings. The current risk score is based on the **highest AbuseIPDB Abuse Confidence Score among the resolved IPv4 addresses** for the target.
 
@@ -77,42 +50,6 @@ The platform provides a web-based interface for submitting targets and visualizi
 ## 2. Core Concept
 
 The platform is designed around a clear separation between **technical analysis**, **security detection**, **threat intelligence**, and **risk assessment**.
-
-```text
-                           User
-                             │
-                             ▼
-                           Target
-                      (IP / Domain)
-                             │
-                             ▼
-                  ┌────────────────────┐
-                  │   Analysis Engine  │
-                  ├────────────────────┤
-                  │ DNS                │
-                  │ HTTP/HTTPS         │
-                  │ TLS                │
-                  │ Network            │
-                  └─────────┬──────────┘
-                            │
-                    ┌───────┴────────┐
-                    │                │
-                    ▼                ▼
-            Detection Engine   Threat Intelligence
-                    │          ├── VirusTotal
-                    ▼          └── AbuseIPDB
-                Findings              │
-                                      ▼
-                              Risk Assessment
-                                      │
-                    ┌─────────────────┴──────────────┐
-                    ▼                                ▼
-               PostgreSQL                    Historical Analysis
-                    │                                │
-                    └────────────────┬───────────────┘
-                                     ▼
-                              Web Dashboard
-```
 
 The **Analysis Engine** collects technical information from the target through DNS, HTTP/HTTPS, TLS and controlled network analysis.
 
